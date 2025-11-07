@@ -1,0 +1,27 @@
+# Go build
+/bin/
+/build/
+*.exe
+*.out
+*.log
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Swagger output
+internal/apidocs/
+
+# Env dosyaları
+.env
+.env.local
+.env.production
+.env.development
+
+# Docker
+docker-compose.override.yml
+*.pid
+
+# Redis / Postgres data
+data/
