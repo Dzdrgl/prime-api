@@ -11,23 +11,25 @@ import (
 )
 
 type App struct {
-	logger *zap.Logger
-	db     *gorm.DB
-	cfg    *Config
-	redis  *redis.Client
+	logger  *zap.Logger
+	db      *gorm.DB
+	cfg     *Config
+	redis   *redis.Client
+	storage ObjectStorage
 }
 
-func New(logger *zap.Logger, db *gorm.DB, cfg *Config, rc *redis.Client) (*App, error) {
+func New(logger *zap.Logger, db *gorm.DB, cfg *Config, rc *redis.Client, store ObjectStorage) (*App, error) {
 	if logger == nil || db == nil || cfg == nil {
-		return nil, fmt.Errorf("logger, db ve cfg zorunludur")
+		return nil, fmt.Errorf("logger, db, cfg zorunlu")
 	}
-	return &App{logger: logger, db: db, cfg: cfg, redis: rc}, nil
+	return &App{logger: logger, db: db, cfg: cfg, redis: rc, storage: store}, nil
 }
 
-func (a *App) Logger() *zap.Logger  { return a.logger }
-func (a *App) DB() *gorm.DB         { return a.db }
-func (a *App) Config() *Config      { return a.cfg }
-func (a *App) Redis() *redis.Client { return a.redis }
+func (a *App) Storage() ObjectStorage { return a.storage }
+func (a *App) Logger() *zap.Logger    { return a.logger }
+func (a *App) DB() *gorm.DB           { return a.db }
+func (a *App) Config() *Config        { return a.cfg }
+func (a *App) Redis() *redis.Client   { return a.redis }
 
 func (a *App) Close(ctx context.Context) error {
 	var firstErr error

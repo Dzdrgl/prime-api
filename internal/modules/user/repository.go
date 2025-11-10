@@ -17,4 +17,5 @@ type Repository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error) // +++
 	List(ctx context.Context, limit, offset int) ([]*User, error)
+	UpdateAvatar(ctx context.Context, id uuid.UUID, url *string) error
 }

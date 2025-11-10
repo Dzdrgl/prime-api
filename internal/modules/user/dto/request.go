@@ -10,9 +10,10 @@ type UserListQuery struct {
 
 // POST /api/v1/users  → create
 type CreateUserRequest struct {
-	Email    string `json:"email" binding:"required,email,max=254" validate:"required,email,max=254"`
-	FullName string `json:"full_name" binding:"required,min=2,max=100" validate:"required,min=2,max=100"`
-	Password string `json:"password" binding:"required,min=8,max=72" validate:"required,min=8,max=72"`
+	Email         string  `json:"email" binding:"required,email,max=254" validate:"required,email,max=254"`
+	FullName      string  `json:"full_name" binding:"required,min=2,max=100" validate:"required,min=2,max=100"`
+	Password      string  `json:"password" binding:"required,min=8,max=72" validate:"required,min=8,max=72"`
+	AvatarDataURL *string `json:"avatar_data_url,omitempty"`
 }
 
 // PATCH /api/v1/users/:id  → partial update (örnek)

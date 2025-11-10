@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -62,8 +63,18 @@ func (h *handler) Login(c *gin.Context) {
 		common.WriteError(c, http.StatusBadRequest, common.ValidationFrom(err))
 		return
 	}
-	u, err := h.users.GetByEmail(c.Request.Context(), strings.ToLower(req.Email))
-	if err != nil || bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.Password)) != nil {
+	ctx := c.Request.Context()
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	u, err := h.users.GetByEmail(ctx, email)
+	if err != nil {
+		if !errors.Is(err, user.ErrNotFound) {
+			h.log.Error("auth.login.get_user", zap.Error(err))
+		}
+		common.WriteError(c, http.StatusUnauthorized, &common.APIError{Code: common.CodeBadRequest, Message: "invalid credentials"})
+		return
+	}
+
+	if bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.Password)) != nil {
 		common.WriteError(c, http.StatusUnauthorized, &common.APIError{Code: common.CodeBadRequest, Message: "invalid credentials"})
 		return
 	}
@@ -95,14 +106,14 @@ func (h *handler) Login(c *gin.Context) {
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
-	if err := h.sessions.Create(c.Request.Context(), s); err != nil {
+	if err := h.sessions.Create(ctx, s); err != nil {
 		h.log.Error("session.create", zap.Error(err))
 		common.WriteError(c, 500, &common.APIError{Code: common.CodeInternal, Message: "cannot create session"})
 		return
 	}
 
 	// Audit
-	_ = h.audit.Add(c.Request.Context(), &AuditEvent{
+	_ = h.audit.Add(ctx, &AuditEvent{
 		UserID: &u.ID, SessionID: &s.ID, Event: "login", IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), CreatedAt: now,
 	})
 
@@ -112,6 +123,7 @@ func (h *handler) Login(c *gin.Context) {
 		RefreshToken: rawRefresh,
 		RefreshExp:   refreshExp.Unix(),
 		SessionID:    s.ID.String(),
+		AvatarURL:    u.AvatarURL,
 	}
 	common.WriteOK(c, http.StatusOK, &resp, nil)
 }
@@ -134,11 +146,15 @@ func (h *handler) Refresh(c *gin.Context) {
 	now := time.Now().UTC()
 	hash := common.HashRefreshToken(req.RefreshToken, h.pepper)
 
-	s, err := h.sessions.GetActiveByHash(c.Request.Context(), hash, req.DeviceID)
+	ctx := c.Request.Context()
+	s, err := h.sessions.GetActiveByHash(ctx, hash, req.DeviceID)
 	if err != nil {
+		if !errors.Is(err, ErrSessionNotFound) {
+			h.log.Error("session.get_active", zap.Error(err))
+		}
 		// reuse detection: eğer hash aktif kayıtta yok ama geride "prev" olarak tespit edilirse tüm oturumları revoke et (örn. ayrı bir sorgu yazılabilir).
 		// Basit yaklaşım: audit ve generic unauthorized.
-		_ = h.audit.Add(c.Request.Context(), &AuditEvent{Event: "refresh_failed", IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), CreatedAt: now})
+		_ = h.audit.Add(ctx, &AuditEvent{Event: "refresh_failed", IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), CreatedAt: now})
 		common.WriteError(c, 401, &common.APIError{Code: common.CodeBadRequest, Message: "invalid refresh"})
 		return
 	}
@@ -146,7 +162,7 @@ func (h *handler) Refresh(c *gin.Context) {
 	// Rotate: eski hash -> prev, yeni hash üret
 	newRaw := uuid.NewString() + "." + uuid.NewString()
 	newHash := common.HashRefreshToken(newRaw, h.pepper)
-	if err := h.sessions.UpdateRotate(c.Request.Context(), s.ID, newHash, now, hash); err != nil {
+	if err := h.sessions.UpdateRotate(ctx, s.ID, newHash, now, hash); err != nil {
 		h.log.Error("session.rotate", zap.Error(err))
 		common.WriteError(c, 500, &common.APIError{Code: common.CodeInternal, Message: "cannot rotate session"})
 		return
@@ -164,7 +180,7 @@ func (h *handler) Refresh(c *gin.Context) {
 	newExp := now.Add(h.refreshTTL)
 
 	// Audit
-	_ = h.audit.Add(c.Request.Context(), &AuditEvent{
+	_ = h.audit.Add(ctx, &AuditEvent{
 		UserID: &s.UserID, SessionID: &s.ID, Event: "refresh", IP: c.ClientIP(), UserAgent: c.Request.UserAgent(), CreatedAt: now,
 	})
 

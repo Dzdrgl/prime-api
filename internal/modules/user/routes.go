@@ -11,11 +11,15 @@ func Routes(v1 *gin.RouterGroup, a *app.App) error {
 		return err
 	}
 
-	g := v1.Group("/users")
+	ug := v1.Group("/users")
 	{
-		g.GET("", h.List)
-		g.GET("/:id", h.Get)
-		g.POST("", h.Create)
+		ug.GET("", h.List)
+		ug.GET("/:id", h.Get)
+		ug.POST("", h.Create)
+
+		ug.POST("/avatar/upload-url", h.CreateAvatarUploadURL) // JWT protected group’ta
+		ug.POST("/avatar/confirm", h.ConfirmAvatar)
+		ug.DELETE("/avatar", h.DeleteAvatar)
 	}
 	return nil
 }

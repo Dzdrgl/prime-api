@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -12,6 +13,8 @@ type Service interface {
 	List(ctx context.Context, limit, offset int) ([]*User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*User, error)
 	Create(ctx context.Context, email, fullName, passwordHash string) (*User, error)
+	UpdateAvatar(ctx context.Context, id uuid.UUID, url *string) error
+	DeleteAvatar(ctx context.Context, id uuid.UUID) error
 }
 
 // Basit implementasyon (mock)
@@ -31,6 +34,8 @@ func (s *service) GetByID(ctx context.Context, id uuid.UUID) (*User, error) {
 }
 
 func (s *service) Create(ctx context.Context, email, fullName, passwordHash string) (*User, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	fullName = strings.TrimSpace(fullName)
 	u := NewUser(email, fullName, passwordHash)
 	if err := s.repo.Create(ctx, u); err != nil {
 		if errors.Is(err, ErrEmailExists) {
@@ -39,4 +44,11 @@ func (s *service) Create(ctx context.Context, email, fullName, passwordHash stri
 		return nil, err
 	}
 	return u, nil
+}
+func (s *service) UpdateAvatar(ctx context.Context, id uuid.UUID, url *string) error {
+	return s.repo.UpdateAvatar(ctx, id, url)
+}
+
+func (s *service) DeleteAvatar(ctx context.Context, id uuid.UUID) error {
+	return s.repo.UpdateAvatar(ctx, id, nil)
 }

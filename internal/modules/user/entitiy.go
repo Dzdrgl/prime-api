@@ -14,8 +14,8 @@ type User struct {
 	Email        string    `gorm:"uniqueIndex;not null"`
 	FullName     string    `gorm:"not null;size:100"`
 	PasswordHash string    `gorm:"not null"`
-	AvatarURL    *string
-	IsActive     bool `gorm:"not null;default:true"`
+	AvatarURL    *string   `gorm:"null"`
+	IsActive     bool      `gorm:"not null;default:true"`
 	LastLoginAt  *time.Time
 	CreatedAt    time.Time  `gorm:"not null"`
 	UpdatedAt    time.Time  `gorm:"not null"`

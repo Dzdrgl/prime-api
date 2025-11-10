@@ -13,25 +13,37 @@ type Config struct {
 	LogLevel     string        `mapstructure:"LOG_LEVEL"`
 	DatabaseURL  string        `mapstructure:"DATABASE_URL"`
 	ShutdownWait time.Duration `mapstructure:"SHUTDOWN_WAIT"`
-
+	// JWT
 	JWTSecret     string        `mapstructure:"JWT_SECRET"`
 	JWTIssuer     string        `mapstructure:"JWT_ISSUER"`
 	JWTAudience   string        `mapstructure:"JWT_AUDIENCE"`
 	JWTAccessTTL  time.Duration `mapstructure:"JWT_ACCESS_TTL"` // 15m
 	RefreshTTL    time.Duration `mapstructure:"REFRESH_TTL"`    // 720h (30d) öneri
 	RefreshPepper string        `mapstructure:"REFRESH_PEPPER"` // server-side secret for hashing
-	LoginRate     int           `mapstructure:"LOGIN_RATE"`     // 5
-	RefreshRate   int           `mapstructure:"REFRESH_RATE"`   // 5
-	RateWindow    time.Duration `mapstructure:"RATE_WINDOW"`    // 1m
+	// Rate Limiting
+	LoginRate   int           `mapstructure:"LOGIN_RATE"`   // 5
+	RefreshRate int           `mapstructure:"REFRESH_RATE"` // 5
+	RateWindow  time.Duration `mapstructure:"RATE_WINDOW"`  // 1m
 
+	// Redis
 	RedisAddr string `mapstructure:"REDIS_ADDR"` // "localhost:6379"
 	RedisPass string `mapstructure:"REDIS_PASS"`
 	RedisDB   int    `mapstructure:"REDIS_DB"`
+
+	// S3
+	S3Endpoint      string `mapstructure:"S3_ENDPOINT"` // http://minio:9000
+	S3Region        string `mapstructure:"S3_REGION"`   // us-east-1
+	S3AccessKey     string `mapstructure:"S3_ACCESS_KEY"`
+	S3SecretKey     string `mapstructure:"S3_SECRET_KEY"`
+	S3Bucket        string `mapstructure:"S3_BUCKET"`
+	S3UsePathStyle  bool   `mapstructure:"S3_USE_PATH_STYLE"`  // true
+	S3PublicBaseURL string `mapstructure:"S3_PUBLIC_BASE_URL"` // http://localhost:9000/mybucket
 }
 
 func LoadConfig() (*Config, error) {
+	// Viper
 	v := viper.New()
-	v.SetConfigName(".env")
+	v.SetConfigFile(".env")
 	v.AddConfigPath(".")
 	v.AddConfigPath("./cmd/api")
 	v.SetConfigType("env")
@@ -54,6 +66,8 @@ func LoadConfig() (*Config, error) {
 	// Redis
 	v.SetDefault("REDIS_ADDR", "localhost:6379")
 	v.SetDefault("REDIS_DB", 0)
+
+	// S3
 
 	_ = v.ReadInConfig() // dosya yoksa sorun değil
 

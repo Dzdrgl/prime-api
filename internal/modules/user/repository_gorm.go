@@ -68,6 +68,11 @@ func (r *gormRepository) List(ctx context.Context, limit, offset int) ([]*User, 
 	}
 	return rows, nil
 }
+func (r *gormRepository) UpdateAvatar(ctx context.Context, id uuid.UUID, url *string) error {
+	return r.db.WithContext(ctx).Model(&User{}).
+		Where("id = ?", id).
+		Update("avatar_url", url).Error
+}
 
 // --- helpers ---
 func isUniqueViolation(err error) bool {

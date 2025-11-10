@@ -18,7 +18,6 @@ import (
 	"githup.com/ademdizdar/prime-api/internal/common"
 	"githup.com/ademdizdar/prime-api/internal/middleware"
 	"githup.com/ademdizdar/prime-api/internal/modules/auth"
-	"githup.com/ademdizdar/prime-api/internal/modules/user"
 	"githup.com/ademdizdar/prime-api/internal/router"
 	"go.uber.org/zap"
 
@@ -54,18 +53,19 @@ func main() {
 		logger.Fatal("db init", zap.Error(err))
 	}
 
-	if err := app.AutoMigrate(gdb, &user.User{}, &auth.UserSession{}, &auth.AuditEvent{}); err != nil {
-		logger.Fatal("auto migrate", zap.Error(err))
-	}
-
 	rc, err := app.InitRedis(cfg.RedisAddr, cfg.RedisPass, cfg.RedisDB)
 	if err != nil {
 		logger.Fatal("redis init", zap.Error(err))
 	}
 	bl := auth.NewRedisBlacklist(rc, "bl:jti:")
 
+	// 3.1) Object Storage (Minio/S3)
+	store, err := app.InitMinio(cfg)
+	if err != nil {
+		logger.Fatal("minio init", zap.Error(err))
+	}
 	// 4) App container
-	container, err := app.New(logger, gdb, cfg, rc)
+	container, err := app.New(logger, gdb, cfg, rc, store)
 	if err != nil {
 		logger.Fatal("app init", zap.Error(err))
 	}
@@ -73,7 +73,6 @@ func main() {
 
 	// 5) Gin + routes
 	r := gin.New()
-
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Logging(logger))
 	r.Use(middleware.RecoveryJSON(logger))
