@@ -25,3 +25,4 @@ docker-compose.override.yml
 
 # Redis / Postgres data
 data/
+logs/

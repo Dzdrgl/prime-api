@@ -68,6 +68,14 @@ func LoadConfig() (*Config, error) {
 	v.SetDefault("REDIS_DB", 0)
 
 	// S3
+	// === S3 / MinIO ===
+	v.SetDefault("S3_ENDPOINT", "http://localhost:9000")
+	v.SetDefault("S3_REGION", "us-east-1")
+	v.SetDefault("S3_ACCESS_KEY", "admin")
+	v.SetDefault("S3_SECRET_KEY", "Minio.adem54")
+	v.SetDefault("S3_BUCKET", "primeapi")
+	v.SetDefault("S3_USE_PATH_STYLE", true)
+	v.SetDefault("S3_PUBLIC_BASE_URL", "http://localhost:9000/primeapi")
 
 	_ = v.ReadInConfig() // dosya yoksa sorun değil
 

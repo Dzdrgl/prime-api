@@ -144,14 +144,14 @@ func (h *handler) Get(c *gin.Context) {
 // @Failure      409  {object} apidoc.UserEnvelope
 // @Failure      500  {object} apidoc.UserEnvelope
 // @Router       /users [post]
-// @Security     BearerAuth
 func (h *handler) Create(c *gin.Context) {
 	// 1) Hem JSON hem multipart destekleyelim:
-	ct := c.GetHeader("Content-Type")
+	ct := strings.ToLower(c.ContentType())
 	if ct == "" {
 		ct = c.ContentType()
 	}
 	ct = strings.ToLower(ct)
+
 	var req dto.CreateUserRequest
 	var bindErr error
 
@@ -197,7 +197,25 @@ func (h *handler) Create(c *gin.Context) {
 	}
 
 	// 3) avatar varsa MinIO’ya yükle, kullanıcıyı güncelle
-	if h.storage != nil && req.AvatarDataURL != nil && *req.AvatarDataURL != "" {
+	if c.GetHeader("X-USE-PICSUM") == "1" {
+		key := fmt.Sprintf("users/%s/avatar.jpg", u.ID.String())
+		// max 5MB
+		pub, signed, err := FetchAndUploadFromURL(c.Request.Context(), h.a.Storage(), "https://picsum.photos/200/300", key, 5*1024*1024)
+		if err != nil {
+			h.log.Warn("picsum fetch/upload failed", zap.Error(err))
+		} else {
+			var final *string
+			if pub != "" {
+				final = &pub
+			} else if signed != "" {
+				final = &signed
+			}
+			if final != nil {
+				_ = h.svc.UpdateAvatar(c.Request.Context(), u.ID, final)
+				u.AvatarURL = final
+			}
+		}
+	} else if req.AvatarDataURL != nil && *req.AvatarDataURL != "" {
 		mime, bytes, err := common.ParseImageDataURL(*req.AvatarDataURL, 5*1024*1024) // 5MB
 		if err != nil {
 			h.log.Warn("invalid avatar data url", zap.Error(err))
@@ -211,18 +229,20 @@ func (h *handler) Create(c *gin.Context) {
 			}
 			key := fmt.Sprintf("users/%s/avatar%s", u.ID.String(), ext)
 			r, size := app.BytesReader(bytes)
-			publicURL, signedURL, err := h.storage.Put(c.Request.Context(), key, r, size, mime)
+			publicURL, signedURL, err := h.a.Storage().Put(c.Request.Context(), key, r, size, mime)
 			if err != nil {
 				h.log.Warn("avatar upload failed", zap.Error(err))
 			} else {
 				var final *string
 				if publicURL != "" {
 					final = &publicURL
-				} else {
-					final = &signedURL // bucket private ise geçici URL; istersen DB’ye yazma, sadece response’ta gönder
+				} else if signedURL != "" {
+					final = &signedURL
 				}
-				if err := h.svc.UpdateAvatar(c.Request.Context(), u.ID, final); err == nil {
-					u.AvatarURL = final
+				if final != nil {
+					if err := h.svc.UpdateAvatar(c.Request.Context(), u.ID, final); err == nil {
+						u.AvatarURL = final
+					}
 				}
 			}
 		}

@@ -46,12 +46,12 @@ func (a *App) Close(ctx context.Context) error {
 			select {
 			case <-done:
 			case <-ctx.Done():
-				if firstErr == nil {
-					firstErr = ctx.Err()
-				}
+				firstErr = ctx.Err()
 			}
-		} else if firstErr == nil && err != nil {
-			firstErr = err
+		} else if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
 		}
 	}
 

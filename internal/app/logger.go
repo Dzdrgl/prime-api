@@ -22,6 +22,10 @@ func NewLogger(level string) (*zap.Logger, error) {
 
 	cfg := zap.NewProductionConfig()
 	cfg.Level = zap.NewAtomicLevelAt(lvl)
+	cfg.OutputPaths = []string{
+		"stdout",
+		"./logs/app.log",
+	}
 
 	return cfg.Build()
 }
