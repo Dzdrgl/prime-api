@@ -8,7 +8,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// Panic'leri yakalayıp JSON hata döner
 func RecoveryJSON(logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
