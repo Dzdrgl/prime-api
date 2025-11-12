@@ -49,9 +49,7 @@ func (a *App) Close(ctx context.Context) error {
 				firstErr = ctx.Err()
 			}
 		} else if err != nil {
-			if firstErr == nil {
-				firstErr = err
-			}
+			firstErr = err
 		}
 	}
 

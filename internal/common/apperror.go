@@ -8,11 +8,13 @@ import (
 type ErrorCode string
 
 const (
-	CodeBadRequest ErrorCode = "BAD_REQUEST"
-	CodeValidation ErrorCode = "VALIDATION_FAILED"
-	CodeNotFound   ErrorCode = "NOT_FOUND"
-	CodeConflict   ErrorCode = "CONFLICT"
-	CodeInternal   ErrorCode = "INTERNAL"
+	CodeBadRequest   ErrorCode = "BAD_REQUEST"
+	CodeValidation   ErrorCode = "VALIDATION_FAILED"
+	CodeNotFound     ErrorCode = "NOT_FOUND"
+	CodeConflict     ErrorCode = "CONFLICT"
+	CodeInternal     ErrorCode = "INTERNAL"
+	CodeUnauthorized ErrorCode = "UNAUTHORIZED"
+	CodeForbidden    ErrorCode = "FORBIDDEN"
 )
 
 type FieldError struct {

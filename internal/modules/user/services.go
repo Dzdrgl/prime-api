@@ -13,7 +13,7 @@ type Service interface {
 	List(ctx context.Context, limit, offset int) ([]*User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*User, error)
 	Create(ctx context.Context, email, fullName, passwordHash string) (*User, error)
-	UpdateAvatar(ctx context.Context, id uuid.UUID, url *string) error
+	UpdateAvatarKey(ctx context.Context, id uuid.UUID, key *string) error
 	DeleteAvatar(ctx context.Context, id uuid.UUID) error
 }
 
@@ -45,10 +45,11 @@ func (s *service) Create(ctx context.Context, email, fullName, passwordHash stri
 	}
 	return u, nil
 }
-func (s *service) UpdateAvatar(ctx context.Context, id uuid.UUID, url *string) error {
-	return s.repo.UpdateAvatar(ctx, id, url)
+
+func (s *service) UpdateAvatarKey(ctx context.Context, id uuid.UUID, key *string) error {
+	return s.repo.UpdateAvatarKey(ctx, id, key)
 }
 
 func (s *service) DeleteAvatar(ctx context.Context, id uuid.UUID) error {
-	return s.repo.UpdateAvatar(ctx, id, nil)
+	return s.repo.UpdateAvatarKey(ctx, id, nil)
 }

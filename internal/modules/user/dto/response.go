@@ -18,3 +18,8 @@ type UserResponse struct {
 type UserListResponse struct {
 	Items []UserResponse `json:"items"`
 }
+
+type UserCreatedResponse struct {
+	User         UserResponse             `json:"user"`
+	AvatarUpload *CreateUploadURLResponse `json:"avatar_upload,omitempty"`
+}

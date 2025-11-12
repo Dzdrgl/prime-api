@@ -37,7 +37,7 @@ type handler struct {
 func NewHandler(a *app.App, jwt *common.JWTMaker, accessTTL, refreshTTL time.Duration, pepper []byte, bl Blacklist) (Handler, error) {
 	return &handler{
 		log:        a.Logger(),
-		users:      user.NewGormRepository(a.DB()),
+		users:      user.NewRepository(a.DB()),
 		sessions:   NewSessionRepository(a.DB()),
 		audit:      NewAuditRepository(a.DB()),
 		jwt:        jwt,

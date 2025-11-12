@@ -6,7 +6,7 @@ import (
 	"githup.com/ademdizdar/prime-api/internal/common"
 	"githup.com/ademdizdar/prime-api/internal/middleware"
 	"githup.com/ademdizdar/prime-api/internal/modules/auth"
-	"githup.com/ademdizdar/prime-api/internal/modules/user"
+	uhttp "githup.com/ademdizdar/prime-api/internal/modules/user/http"
 	"go.uber.org/zap"
 )
 
@@ -19,14 +19,21 @@ func RegisterV1Routes(r *gin.Engine, a *app.App, maker *common.JWTMaker, bl auth
 	}
 
 	// USERS (public: register)
-	if err := user.RoutesPublic(v1, a); err != nil {
+	if err := uhttp.UserRoutesPublic(v1, a); err != nil {
 		a.Logger().Fatal("user public routes", zap.Error(err))
 	}
 
-	// USERS (protected)
+	// PROTECTED (JWT zorunlu)
 	protected := v1.Group("")
 	protected.Use(middleware.JWTAuth(maker, bl))
-	if err := user.RoutesProtected(protected, a); err != nil {
+
+	// USERS (protected)
+	if err := uhttp.UserRoutesProtected(protected, a); err != nil {
 		a.Logger().Fatal("user protected routes", zap.Error(err))
+	}
+
+	// AVATAR (protected) — avatar modülü servis bağımlılığını kendi içinde çözecek
+	if err := uhttp.AvatarRoutesProtected(protected, a); err != nil {
+		a.Logger().Fatal("avatar routes", zap.Error(err))
 	}
 }

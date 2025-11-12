@@ -17,8 +17,16 @@ type ObjectStorage interface {
 	Put(ctx context.Context, key string, r io.Reader, size int64, contentType string) (publicURL string, signedURL string, err error)
 	PresignedPut(ctx context.Context, key, contentType string, ttl time.Duration) (string, error)
 	Exists(ctx context.Context, key string) (bool, error)
-	PublicURL(key string) *string
+	Stat(ctx context.Context, key string) (ObjectMeta, error)
 	Delete(ctx context.Context, key string) error
+	PublicURL(key string) *string
+}
+
+type ObjectMeta struct {
+	Size         int64
+	ContentType  string
+	ETag         string
+	LastModified time.Time
 }
 
 type MinioStorage struct {
@@ -47,7 +55,6 @@ func InitMinio(cfg *Config) (*MinioStorage, error) {
 		return nil, err
 	}
 
-	// bucket yoksa oluşturmayı deneyebiliriz (idempotent)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	exists, err := cl.BucketExists(ctx, cfg.S3Bucket)
@@ -58,7 +65,7 @@ func InitMinio(cfg *Config) (*MinioStorage, error) {
 	return &MinioStorage{
 		client:     cl,
 		bucket:     cfg.S3Bucket,
-		publicBase: cfg.S3PublicBaseURL, // boşsa sadece signed dönecek
+		publicBase: cfg.S3PublicBaseURL,
 	}, nil
 }
 
@@ -86,7 +93,7 @@ func (m *MinioStorage) Put(ctx context.Context, key string, r io.Reader, size in
 }
 
 func (m *MinioStorage) Delete(ctx context.Context, key string) error {
-	return m.client.RemoveObject(ctx, m.bucket, path.Clean(key), minio.RemoveObjectOptions{})
+	return m.client.RemoveObject(ctx, m.bucket, key, minio.RemoveObjectOptions{})
 }
 
 func (m *MinioStorage) PresignedPut(ctx context.Context, key, contentType string, ttl time.Duration) (string, error) {
@@ -114,6 +121,19 @@ func (m *MinioStorage) PublicURL(key string) *string {
 	}
 	u := fmt.Sprintf("%s/%s", m.publicBase, path.Clean(key))
 	return &u
+}
+
+func (m *MinioStorage) Stat(ctx context.Context, key string) (ObjectMeta, error) {
+	oi, err := m.client.StatObject(ctx, m.bucket, key, minio.StatObjectOptions{})
+	if err != nil {
+		return ObjectMeta{}, err
+	}
+	return ObjectMeta{
+		Size:         oi.Size,
+		ContentType:  oi.ContentType,
+		ETag:         oi.ETag,
+		LastModified: oi.LastModified,
+	}, nil
 }
 
 // Küçük yardımcı (isteğe bağlı)
